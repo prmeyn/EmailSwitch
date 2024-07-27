@@ -4,5 +4,6 @@
 	{
 		public bool IsSent { get; set; }
 		public byte OtpLength { get; set; }
+		public DateTimeOffset ExpiryDateTimeOffset { get; set; }
 	}
 }
