@@ -24,10 +24,10 @@ namespace EmailSwitch.EmailTemplates
 								   $"Expiry Time: {expiryTime}\n" +
 								   $"Verified Mobile Numbers: {string.Join(", ", verifiedMobileNumberStrings)}\n" +
 								   $"Verified Emails: {string.Join(", ", verifiedEmailStrings)}",
-				HtmlContent = $"<h1>Verification Code: {generatedCode}</h1>" +
+				HtmlContent = $"<h1>Verification Code for {emailPendingVerification.GetRawValue()}: {generatedCode}</h1>" +
 							  $"<p>Expiry Time: {expiryTime}</p>" +
 							  $"<p>Verified Mobile Numbers: {string.Join(", ", verifiedMobileNumberStrings)}</p>" +
-							  $"<p>Verified Emails: {string.Join(", ", verifiedEmailStrings)}</p>"
+							  (verifiedEmailStrings.Any() ? $"<p>Verified Emails: {string.Join(", ", verifiedEmailStrings)}</p>" : "")
 			};
 		}
 	}
