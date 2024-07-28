@@ -1,4 +1,4 @@
-﻿# EmailSwitch(https://www.nuget.org/packages/EmailSwitch)
+﻿# EmailSwitch
 
 **EmailSwitch** is an open-source C# class library that provides a wrapper around existing services that are used to verify emails and send messages.
 The service stores information in a MongoDb database that you configure using the package [MongoDbService](https://www.nuget.org/packages/MongoDbService) 
