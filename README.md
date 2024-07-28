@@ -24,11 +24,18 @@ dotnet add package EmailSwitch
 Then in your `appsettings.json` add the following sample configuration and change the values to match the details of your credentials to the various services.
 ```json
   "EmailSwitchSettings": {
-    "OtpLength": 6,
-    "SendGrid": {
-      
-    }
+  "OtpLength": 6,
+  "Controls": {
+    "MaxRoundRobinAttempts": 2,
+    "Priority": [ "SendGrid" ],
+    "MaximumFailedAttemptsToVerify": 3,
+    "SessionTimeoutInSeconds": 240
+  },
+  "SendGrid": {
+    "From": "abc@xyz.com",
+    "Password": "MovedToSecret"
   }
+}
   ```
 
 After the above is done, you can just Dependency inject the `EmailSwitch` in your C# class.
