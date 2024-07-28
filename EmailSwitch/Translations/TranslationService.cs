@@ -20,22 +20,21 @@ namespace EmailSwitch.Translations
 		public static Dictionary<TranslationKey, Dictionary<LanguageId, Dictionary<LanguageLocaleVariationCode, string[]>>> TranslationsDictionary = new()
 		{
 			{
-				TranslationKey.Test,
+				TranslationKey.SendOTPEmailSubject,
 				new Dictionary<LanguageId, Dictionary<LanguageLocaleVariationCode, string[]>>()
 				{
 					{
 						LanguageId.en,
 						new Dictionary<LanguageLocaleVariationCode, string[]>()
 						{
-							{ LanguageLocaleVariationCode.Default, new string[] { "Test", "Colour" } },
-							{ LanguageLocaleVariationCode.US, new string[] { "Test", "Color" } }
+							{ LanguageLocaleVariationCode.Default, new string[] { "Email verification" } }
 						}
 					},
 					{
 						LanguageId.da,
 						new Dictionary<LanguageLocaleVariationCode, string[]>()
 						{
-							{ LanguageLocaleVariationCode.Default, new string[] { "Test", "farve" } }
+							{ LanguageLocaleVariationCode.Default, new string[] { "E-mailbekræftelse" } }
 						}
 					}
 				}

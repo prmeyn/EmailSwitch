@@ -25,7 +25,7 @@ namespace EmailSwitch.Services.SendGrid
 			_mongoDbTokenService = mongoDbTokenService;
 		}
 
-		public async Task<EmailSwitchResponseSendOTP> SendOTP(EmailIdentifier email, MobileNumber[] verifiedMobileNumbers, EmailIdentifier[] verifiedEmails, HashSet<LanguageIsoCode> preferredLanguageIsoCodeList, UserAgent userAgent)
+		public async Task<EmailSwitchResponseSendOTP> SendOTP(EmailIdentifier emailPendingVerification, MobileNumber[] verifiedMobileNumbers, EmailIdentifier[] verifiedEmails, HashSet<LanguageIsoCode> preferredLanguageIsoCodeList, UserAgent userAgent)
 		{
 			try
 			{
@@ -34,14 +34,15 @@ namespace EmailSwitch.Services.SendGrid
 
 				var generatedCode = await _mongoDbTokenService.Generate(
 								logId: typeof(SendGridService).FullName,
-								id: email.ToString(),
+								id: emailPendingVerification.ToString(),
 								validityInSeconds: validityInSeconds,
 								numberOfDigits: _sendGridInitializer.SendGridSettings.OtpLength);
-				EmailContent sendOTPEmail = EmailTemplates.TemplateCreator.CreateSendOTPEmail(email, verifiedMobileNumbers, verifiedEmails,preferredLanguageIsoCodeList,userAgent, generatedCode);
+
+				EmailContent sendOTPEmail = EmailTemplates.TemplateCreator.CreateSendOTPEmail(emailPendingVerification, verifiedMobileNumbers, verifiedEmails,preferredLanguageIsoCodeList,userAgent, generatedCode, DateTimeOffset.UtcNow.AddSeconds(validityInSeconds - 10));
 
 				var sendGridMessage = MailHelper.CreateSingleEmail(
 							   from: fromEmail,
-							   to: new EmailAddress(email.GetRawValue()),
+							   to: new EmailAddress(emailPendingVerification.GetRawValue()),
 							   subject: sendOTPEmail.Subject,
 							   plainTextContent: sendOTPEmail.PlainTextContent,
 							   htmlContent: sendOTPEmail.HtmlContent
@@ -65,7 +66,14 @@ namespace EmailSwitch.Services.SendGrid
 
 		public async Task<EmailSwitchhResponseVerifyOTP> VerifyOTP(EmailIdentifier email, string OTP)
 		{
-			throw new NotImplementedException();
+			var verified = await _mongoDbTokenService.Validate(email.ToString(), token: OTP);
+			if (verified)
+			{
+				await _mongoDbTokenService.Consume(email.ToString());
+			}
+			return new EmailSwitchhResponseVerifyOTP() {
+				Verified = verified
+			};
 		}
 	}
 }

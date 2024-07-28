@@ -2,6 +2,6 @@
 {
 	public enum TranslationKey
 	{
-		Test
+		SendOTPEmailSubject
 	}
 }
