@@ -4,7 +4,7 @@
 The service stores information in a MongoDb database that you configure using the package [MongoDbService](https://www.nuget.org/packages/MongoDbService) 
 ## Features
 
-- Covers no services as of today (possible to cover more if needed)
+- Covers only SendGrid as of today (possible to cover more if needed)
 - Usage information is stored in your own MongoDB instance for audit reasons
 
 
