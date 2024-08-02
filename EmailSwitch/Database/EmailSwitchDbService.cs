@@ -62,7 +62,7 @@ namespace EmailSwitch.Database
 				userAgent: userAgent,
 				generatedCode: generatedCode,
 				expiryDateTimeOffset: DateTimeOffset.UtcNow.AddSeconds(_emailSwitchInitializer.EmailControls.SessionTimeoutInSeconds - 10),
-				signatureLogoUri: new Uri(_settingsService.BaseUri, $"{EmailSignatureLogoEndpoint.EmailSignatureLogoRoute}{latestSession.SessionId}"));
+				signatureLogoUri: new Uri(_settingsService.BaseUri, $"{ConstantStrings.EmailSwitchGroupName}{EmailSignatureLogoEndpoint.EmailSignatureLogoRoute}{latestSession.SessionId}"));
 
 			await _emailSwitchSessionCollection.InsertOneAsync(latestSession);
 
