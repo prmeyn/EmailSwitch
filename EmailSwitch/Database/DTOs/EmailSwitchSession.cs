@@ -14,6 +14,7 @@ namespace EmailSwitch.Database.DTOs
 		public required DateTimeOffset ExpiryTimeUTC { get; init; }
 		public Queue<EmailProvider>? EmailProvidersQueue { get; set; }
 		public List<AttemptDetailsSendOTP> SentAttempts { get; set; } = [];
+		public List<DateTimeOffset> LogoRenderedAttemptsDateTimeOffset { get; set; } = [];
 		public List<DateTimeOffset> FailedVerificationAttemptsDateTimeOffset { get; set; } = [];
 		public EmailContent SendOTPEmail { get; set; }
 

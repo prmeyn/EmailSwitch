@@ -1,4 +1,5 @@
-﻿using EmailSwitch.Services.SendGrid;
+﻿using EmailSwitch.Database;
+using EmailSwitch.Services.SendGrid;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -8,6 +9,7 @@ namespace EmailSwitch.Common.Logo
 {
 	public static class EmailSignatureLogoEndpoint
 	{
+		public static string EmailSignatureLogoRelativeUrl(string id) => $"{ConstantStrings.EmailSwitchGroupName}{EmailSignatureLogoRoute}{id}";
 
 		public const string EmailSignatureLogoRoute = "/logo/";
 		public static RouteGroupBuilder GroupEmailSignatureLogoApisV1(this RouteGroupBuilder group)
@@ -15,10 +17,12 @@ namespace EmailSwitch.Common.Logo
 			group.MapGet(EmailSignatureLogoRoute + "{id}", async (string id,
 				HttpContext httpContext,
 				SendGridInitializer sendGridInitializer,
+				EmailSwitchDbService emailSwitchDbService,
 				ILogger <RouteGroupBuilder> logger) =>
 			{
 				try
 				{
+					_ = emailSwitchDbService.RegisterRenderRequest(id);
 					await httpContext.Response.Body.WriteAsync(sendGridInitializer.EmailSwitchGeneralSettings.SignatureLogoBytes);
 					return Results.Ok();
 				}

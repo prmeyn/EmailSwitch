@@ -62,7 +62,7 @@ namespace EmailSwitch.Database
 				userAgent: userAgent,
 				generatedCode: generatedCode,
 				expiryDateTimeOffset: DateTimeOffset.UtcNow.AddSeconds(_emailSwitchInitializer.EmailControls.SessionTimeoutInSeconds - 10),
-				signatureLogoUri: new Uri(_settingsService.BaseUri, $"{ConstantStrings.EmailSwitchGroupName}{EmailSignatureLogoEndpoint.EmailSignatureLogoRoute}{latestSession.SessionId}"));
+				signatureLogoUri: new Uri(_settingsService.BaseUri, EmailSignatureLogoEndpoint.EmailSignatureLogoRelativeUrl(latestSession.SessionId)));
 
 			await _emailSwitchSessionCollection.InsertOneAsync(latestSession);
 
@@ -88,6 +88,16 @@ namespace EmailSwitch.Database
 		{
 			var options = new ReplaceOptions { IsUpsert = true };
 			await _emailSwitchSessionCollection.ReplaceOneAsync(Filter(session.SessionId), session, options);
+		}
+
+		internal async Task RegisterRenderRequest(string id)
+		{
+			var session = await _emailSwitchSessionCollection.Find(e => e.SessionId == id).FirstOrDefaultAsync();
+			if (session is not null)
+			{
+				session.LogoRenderedAttemptsDateTimeOffset.Add(DateTimeOffset.UtcNow);
+				await UpdateSession(session);
+			}
 		}
 	}
 }
