@@ -7,6 +7,7 @@ using HumanLanguages;
 using Microsoft.Extensions.Logging;
 using MongoDbTokenManager.Database;
 using SMSwitch.Common.DTOs;
+using SMSwitch.Database;
 
 namespace EmailSwitch
 {
@@ -112,6 +113,16 @@ namespace EmailSwitch
 			if (verified)
 			{
 				await _mongoDbTokenService.Consume(session.SessionId);
+			}
+
+			if (session is not null)
+			{
+				session.FailedVerificationAttemptsDateTimeOffset.Add(DateTimeOffset.UtcNow);
+				await _emailSwitchDbService.UpdateSession(session);
+			}
+			else
+			{
+				_logger.LogInformation("Session not found: Unable to verify OTP for {Email} with OTP: {OTP}", email, OTP);
 			}
 			return new EmailSwitchhResponseVerifyOTP()
 			{
