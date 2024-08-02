@@ -2,11 +2,14 @@
 using EmailSwitch.Common.DTOs;
 using EmailSwitch.Common.Logo;
 using EmailSwitch.Database.DTOs;
+using EmailSwitch.Services.SendGrid;
 using HumanLanguages;
+using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using MongoDbService;
 using MongoDbTokenManager.Database;
 using SMSwitch.Common.DTOs;
+using SMSwitch.Database.DTOs;
 using uSignIn.CommonSettings.Settings;
 
 namespace EmailSwitch.Database
@@ -18,19 +21,22 @@ namespace EmailSwitch.Database
 		private MongoDbTokenService _mongoDbTokenService;
 		private EmailSwitchGeneralInitializer _emailSwitchGeneralInitializer;
 		private readonly SettingsService _settingsService;
+		private readonly ILogger<EmailSwitchDbService> _logger;
 
 		public EmailSwitchDbService(
 			MongoService mongoService,
 			EmailSwitchInitializer emailSwitchInitializer,
 			MongoDbTokenService mongoDbTokenService,
 			EmailSwitchGeneralInitializer emailSwitchGeneralInitializer,
-			SettingsService settingsService)
+			SettingsService settingsService,
+			ILogger<EmailSwitchDbService> logger)
 		{
 			_emailSwitchSessionCollection = mongoService.Database.GetCollection<EmailSwitchSession>(nameof(EmailSwitchSession), new MongoCollectionSettings() { ReadConcern = ReadConcern.Majority, WriteConcern = WriteConcern.WMajority });
 			_emailSwitchInitializer = emailSwitchInitializer;
 			_mongoDbTokenService = mongoDbTokenService;
 			_emailSwitchGeneralInitializer = emailSwitchGeneralInitializer;
 			_settingsService = settingsService;
+			_logger = logger;
 		}
 
 		internal async Task<EmailSwitchSession?> GetOrCreateAndGetLatestSession(EmailIdentifier emailPendingVerification, MobileNumber[] verifiedMobileNumbers, EmailIdentifier[] verifiedEmails, HashSet<LanguageIsoCode> preferredLanguageIsoCodeList, UserAgent userAgent)
@@ -83,6 +89,7 @@ namespace EmailSwitch.Database
 		}
 
 		private FilterDefinition<EmailSwitchSession> Filter(EmailIdentifier emailPendingVerification) => Builders<EmailSwitchSession>.Filter.Eq(t => t.EmailId, emailPendingVerification.ToString());
+		private FilterDefinition<EmailSwitchSession> Filter(string sessionId) => Builders<EmailSwitchSession>.Filter.Eq(t => t.SessionId, sessionId);
 
 		internal async Task UpdateSession(EmailSwitchSession session)
 		{
@@ -92,7 +99,8 @@ namespace EmailSwitch.Database
 
 		internal async Task RegisterRenderRequest(string id)
 		{
-			var session = await _emailSwitchSessionCollection.Find(e => e.SessionId == id).FirstOrDefaultAsync();
+			_logger.LogInformation(id);
+			var session = await _emailSwitchSessionCollection.Find(Filter(id))?.FirstOrDefaultAsync();
 			if (session is not null)
 			{
 				session.LogoRenderedAttemptsDateTimeOffset.Add(DateTimeOffset.UtcNow);
