@@ -90,7 +90,7 @@ namespace EmailSwitch.Database
 			}
 			return null;
 		}
-
+		private FilterDefinition<EmailSwitchSession> Filter(string sessionId) => Builders<EmailSwitchSession>.Filter.Eq(t => t.SessionId, sessionId);
 		private FilterDefinition<EmailSwitchSession> Filter(EmailIdentifier emailPendingVerification) => Builders<EmailSwitchSession>.Filter.Eq(t => t.EmailId, emailPendingVerification.ToString());
 
 		internal async Task UpdateSession(EmailSwitchSession session)
@@ -101,7 +101,7 @@ namespace EmailSwitch.Database
 
 		internal async Task RegisterRenderRequest(string id)
 		{
-			var session = _emailSwitchSessionCollection.Find(Builders<EmailSwitchSession>.Filter.Eq(t => t.SessionId, id))?.FirstOrDefault();
+			var session = _emailSwitchSessionCollection.Find(Filter(id))?.FirstOrDefault();
 			if (session is not null)
 			{
 				session.LogoRenderedAttemptsDateTimeOffset.Add(DateTimeOffset.UtcNow);
