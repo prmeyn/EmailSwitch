@@ -1,7 +1,8 @@
 ﻿using EmailSwitch.Common;
-using EmailSwitch.Database.DTOs;
+using EmailSwitch.Database;
 using EmailSwitch.Services.SendGrid;
 using Microsoft.Extensions.DependencyInjection;
+using uSignIn.CommonSettings.Settings;
 
 namespace EmailSwitch
 {
@@ -9,7 +10,9 @@ namespace EmailSwitch
 	{
 		public static void AddEmailSwitchServices(this IServiceCollection services)
 		{
+			services.AddSingleton<SettingsService>();
 			services.AddSingleton<EmailSwitchInitializer>();
+			services.AddSingleton<EmailSwitchGeneralInitializer>();
 			services.AddSingleton<EmailSwitchDbService>();
 
 			services.AddSingleton<SendGridInitializer>();

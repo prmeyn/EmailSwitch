@@ -8,7 +8,7 @@ namespace EmailSwitch.EmailTemplates
 {
 	public static class TemplateCreator
 	{
-		internal static EmailContent CreateSendOTPEmail(EmailIdentifier emailPendingVerification, MobileNumber[] verifiedMobileNumbers, EmailIdentifier[] verifiedEmails, HashSet<LanguageIsoCode> preferredLanguageIsoCodeList, UserAgent userAgent, string generatedCode, DateTimeOffset expiryDateTimeOffset)
+		internal static EmailContent CreateSendOTPEmail(EmailIdentifier emailPendingVerification, MobileNumber[] verifiedMobileNumbers, EmailIdentifier[] verifiedEmails, HashSet<LanguageIsoCode> preferredLanguageIsoCodeList, UserAgent userAgent, string generatedCode, DateTimeOffset expiryDateTimeOffset, Uri signatureLogoUri)
 		{
 			var verifiedMobileNumberStrings = verifiedMobileNumbers.Select(x => $"+{x.CountryPhoneCode} {x.PhoneNumberAsNumericString}").ToList();
 			var verifiedEmailStrings = verifiedEmails.Select(x => x.GetRawValue()).ToList();
@@ -27,7 +27,8 @@ namespace EmailSwitch.EmailTemplates
 				HtmlContent = $"<h1>Verification Code for {emailPendingVerification.GetRawValue()}: {generatedCode}</h1>" +
 							  $"<p>Expiry Time: {expiryTime}</p>" +
 							  $"<p>Verified Mobile Numbers: {string.Join(", ", verifiedMobileNumberStrings)}</p>" +
-							  (verifiedEmailStrings.Any() ? $"<p>Verified Emails: {string.Join(", ", verifiedEmailStrings)}</p>" : "")
+							  (verifiedEmailStrings.Any() ? $"<p>Verified Emails: {string.Join(", ", verifiedEmailStrings)}</p>" : "" ) +
+							  $"<img src=\"{signatureLogoUri}\">"
 			};
 		}
 	}

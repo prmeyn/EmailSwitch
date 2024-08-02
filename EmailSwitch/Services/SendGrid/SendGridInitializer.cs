@@ -11,7 +11,7 @@ namespace EmailSwitch.Services.SendGrid
 		public readonly SendGridClient SendGridClient;
 		public SendGridInitializer(
 			IConfiguration configuration,
-			ILogger<SendGridInitializer> logger) : base(configuration)
+			ILogger<SendGridInitializer> logger) : base(configuration, logger)
 		{
 			try
 			{
