@@ -24,12 +24,10 @@ namespace EmailSwitch.Common.Logo
 				{
 					_ = emailSwitchDbService.RegisterRenderRequest(id);
 					await httpContext.Response.Body.WriteAsync(sendGridInitializer.EmailSwitchGeneralSettings.SignatureLogoBytes);
-					return Results.Ok();
 				}
 				catch (Exception ex)
 				{
-					logger.LogCritical(ex, "Unable to render LOGO in email.");
-					return Results.Problem("Unable to render LOGO in email.");
+					logger.LogCritical(ex, "Unable to render LOGO in email :{ID}.", id);
 				}
 			})
 			.Produces(StatusCodes.Status200OK);

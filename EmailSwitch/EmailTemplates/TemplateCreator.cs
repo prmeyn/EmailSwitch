@@ -23,7 +23,7 @@ namespace EmailSwitch.EmailTemplates
 				PlainTextContent = $"Verification Code: {generatedCode}\n" +
 								   $"Expiry Time: {expiryTime}\n" +
 								   $"Verified Mobile Numbers: {string.Join(", ", verifiedMobileNumberStrings)}\n" +
-								   $"Verified Emails: {string.Join(", ", verifiedEmailStrings)}",
+								   (verifiedEmailStrings.Any() ? $"Verified Emails: {string.Join(", ", verifiedEmailStrings)}" : ""),
 				HtmlContent = $"<h1>Verification Code for {emailPendingVerification.GetRawValue()}: {generatedCode}</h1>" +
 							  $"<p>Expiry Time: {expiryTime}</p>" +
 							  $"<p>Verified Mobile Numbers: {string.Join(", ", verifiedMobileNumberStrings)}</p>" +
