@@ -7,7 +7,6 @@ using HumanLanguages;
 using Microsoft.Extensions.Logging;
 using MongoDbTokenManager.Database;
 using SMSwitch.Common.DTOs;
-using SMSwitch.Database;
 
 namespace EmailSwitch
 {
@@ -37,12 +36,12 @@ namespace EmailSwitch
 		public async Task<EmailSwitchResponseSendOTP> SendOTP(EmailIdentifier email, MobileNumber[] verifiedMobileNumbers, EmailIdentifier[] verifiedEmails, HashSet<LanguageIsoCode> preferredLanguageIsoCodeList, UserAgent userAgent)
 		{
 			EmailSwitchResponseSendOTP responseSendOTP = null;
-			EmailSwitchSession session = null;
+			EmailSwitchSession? session = null;
 			try 
 			{
 				session = await _emailSwitchDbService.GetOrCreateAndGetLatestSession(email, verifiedMobileNumbers, verifiedEmails, preferredLanguageIsoCodeList, userAgent);
 				Queue<EmailProvider> emailProvidersQueue = null;
-				if (session.EmailProvidersQueue?.Any() ?? false)
+				if (session?.EmailProvidersQueue?.Any() ?? false)
 				{
 					emailProvidersQueue = session.EmailProvidersQueue;
 				}
@@ -70,7 +69,7 @@ namespace EmailSwitch
 
 				while (emailProvidersQueue.Any())
 				{
-					if (session.SentAttempts?.Any() ?? false)
+					if (session?.SentAttempts?.Any() ?? false)
 					{
 						emailProvidersQueue.Dequeue();
 						if (!emailProvidersQueue.Any())
@@ -90,9 +89,11 @@ namespace EmailSwitch
 						break;
 					}
 				}
-
-				session.EmailProvidersQueue = emailProvidersQueue;
-				await _emailSwitchDbService.UpdateSession(session);
+				if (session is not null)
+				{
+					session.EmailProvidersQueue = emailProvidersQueue;
+					await _emailSwitchDbService.UpdateSession(session);
+				}
 
 				if (responseSendOTP == null || !responseSendOTP.IsSent)
 				{
@@ -109,20 +110,25 @@ namespace EmailSwitch
 		public async Task<EmailSwitchhResponseVerifyOTP> VerifyOTP(EmailIdentifier email, string OTP)
 		{
 			var session = await _emailSwitchDbService.GetLatestSession(email);
-			var verified = await _mongoDbTokenService.Validate(session.SessionId, token: OTP);
-			if (verified)
-			{
-				await _mongoDbTokenService.Consume(session.SessionId);
-			}
+			bool verified = false;
 
-			if (session is not null)
+			if (session is null)
 			{
-				session.FailedVerificationAttemptsDateTimeOffset.Add(DateTimeOffset.UtcNow);
-				await _emailSwitchDbService.UpdateSession(session);
+				_logger.LogInformation("Session not found: Unable to verify OTP for {Email} with OTP: {OTP}", email, OTP);
 			}
 			else
 			{
-				_logger.LogInformation("Session not found: Unable to verify OTP for {Email} with OTP: {OTP}", email, OTP);
+				verified = await _mongoDbTokenService.Validate(session.SessionId, token: OTP);
+				if (verified)
+				{
+					session.SuccessfullyVerifiedTimestampUTC = DateTimeOffset.UtcNow;
+					await _mongoDbTokenService.Consume(session.SessionId);
+				}
+				else
+				{
+					session.FailedVerificationAttemptsDateTimeOffset.Add(DateTimeOffset.UtcNow);
+				}
+				await _emailSwitchDbService.UpdateSession(session);
 			}
 			return new EmailSwitchhResponseVerifyOTP()
 			{
