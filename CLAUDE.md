@@ -64,6 +64,65 @@ This diverges from SMSwitch **on purpose**, and the divergence is the fix for a 
   provider.
 - **An empty queue does not kill the session.** `HasNotExpired` says nothing about the queue.
 
+**Failover covers rejection, not delivery — and this was a real incident, not a hypothetical.** A
+provider service only ever sees the synchronous response, so `IsSuccessStatusCode` is the entire
+signal it has. Every provider here accepts a send and delivers later, which means a message that is
+accepted and then dropped looks identical to one that arrives. Brevo answered `201` for a send from
+an unauthenticated sender, `SendOTP` recorded a success, the budget slot was spent, SendGrid was
+never tried, and the code silently never arrived. Nothing synchronous could have caught it; SendGrid
+publishes a support article on the same behaviour for its own `202`.
+
+Consequences to keep in mind before "fixing" anything here:
+
+- **Do not make a provider service inspect the response body to guess at delivery.** It cannot know.
+  A 2xx is the provider taking responsibility, and that is all `IsSent` has ever claimed.
+- **Resend rejects an unverified sending domain synchronously (`403`), Brevo does not.** So the same
+  misconfiguration fails over on one provider and silently disappears on the other. That difference
+  is documented in the README because it is a setup trap, not a code defect.
+- Closing the gap needs provider delivery webhooks feeding a re-send through the next provider. That
+  is what `Webhooks/` now does, and it is deliberately **not** bolted onto `IServiceEmails`.
+
+## Delivery failover
+
+`Webhooks/DeliveryFailoverService` turns a provider delivery event into a resend through the next
+provider in the session's budget. Provider-neutral by design: each provider's parser reduces its own
+vocabulary to a `DeliveryEvent`, and the decision is made once. Brevo is wired up; Resend and SendGrid
+are not.
+
+Constraints that are load-bearing, each with a test:
+
+- **It requires ≥2 providers in `Priority`.** A single-provider budget spends its only slot on the
+  send that just failed and `RegisterSendAttempts` retires the rendered email with it, so there is
+  nothing left to resend. `A_spent_budget_cannot_be_recovered` pins that this is reported, not
+  crashed on.
+- **The resend reuses the stored body, never a fresh render.** The recipient must get the *same* code;
+  two live codes in one inbox is worse than none. `EmailSwitchService.ResendThroughNextProvider` reads
+  `SendOTPEmail` and shares `SpendBudget` with the normal path, so there is one place that knows how a
+  slot is spent.
+- **`GetLiveSessionByProviderMessageId` requires `LiveClaimKey` to still be held**, on top of the
+  usual liveness rules. Without that, a late bounce for a session the user already replaced would
+  resend a superseded code that no longer verifies.
+- **Events are claimed with `$addToSet` before the send, not recorded after it.** Webhooks retry, and
+  two redeliveries arriving together would otherwise both pass a membership test and both send.
+  `ModifiedCount > 0` is the claim; no accompanying filter, since the operator already guarantees it.
+  Measured at ten concurrent redeliveries yielding exactly one claim.
+- **The event key includes the event name**, not just the message id, so a message that legitimately
+  produces two different terminal events is not silently reduced to one.
+- **`deferred`, `softBounce` and `spam` are not terminal.** The first two are retried by the provider,
+  so acting on them double-sends; `spam` means the recipient *got* it.
+- **Brevo does not sign its webhooks** — Resend uses Svix HMAC, SendGrid uses ECDSA, Brevo offers only
+  IP allowlisting. A fixed-time shared-secret path segment stands in, `AddEmailSwitchWebhookEndpoints()`
+  throws without one, and the endpoint is opt-in so upgrading never silently exposes a POST that can
+  send email. The real control is that an event must name a message id belonging to a live session;
+  the budget is the hard ceiling behind both.
+- **The endpoint always answers 200 except on a bad token.** None of the outcomes are retryable, and a
+  4xx or 5xx just earns a redelivery storm for events that will never be actionable. A bad token gets
+  404 so the endpoint looks unmapped.
+
+`ProviderMessageId` on `EmailSwitchResponseSendOTP` is what correlates an event back to a session, and
+reading it must **never** fail a send — the email is already gone by then, so reporting failure would
+invite the caller to send a second. A provider that reports no id simply cannot participate.
+
 SMSwitch does the opposite on both of the last two points — it leaves the successful provider at the
 head (its `VerifyOTP` peeks it to route verification back) and treats an empty queue as expiry. Both
 choices are wrong here: nothing routes by provider, and conflating "out of sends" with "expired" meant
